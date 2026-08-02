@@ -1,0 +1,73 @@
+# ========================================
+# FitAI 分布式智能运动健康管理系统
+# ========================================
+
+# --- Java / Maven ---
+target/
+!.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+*.war
+*.log
+
+# --- Maven ---
+.mvn/
+mvnw
+mvnw.cmd
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+*.egg
+uv.lock
+
+# --- IDE ---
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# --- Claude Code ---
+.claude/
+
+# --- Environment ---
+.env
+.env.local
+.env.*.local
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.tmp
+
+# --- Docker ---
+# (保留 rocketmq-env 目录结构)
+rocketmq-env/data/
+rocketmq-env/logs/
+
+# --- Logs ---
+logs/
+*.log
+
+# --- LangGraph Runtime ---
+.langgraph_api/
+*stderr.txt
+*stdout.txt
+
+# --- Temp/Backup ---
+~
+
+# --- Media ---
+*.mp4
+*.mov

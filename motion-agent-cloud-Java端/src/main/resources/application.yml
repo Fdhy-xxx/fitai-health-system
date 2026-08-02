@@ -1,0 +1,66 @@
+
+server:
+  port: 8080
+
+spring:
+  application:
+    name: motion-agent-cloud
+
+  # 🌐 数据库连接配置
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/db_motion_agent?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+# 💾 MyBatis-Plus 框架配置
+mybatis-plus:
+  configuration:
+    # 开启驼峰命名自动映射（如数据库字段 create_time 映射为 Java 的 createTime）
+    map-underscore-to-camel-case: true
+    # 控制台打印 SQL 语句，方便你这两天调试看效果
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      # 全局主键策略：自增
+      id-type: auto
+
+# 🚀 自定义 AI 微服务配置（防腐层解耦核心）
+ai-service:
+  #指向你 FastAPI 的 health-plan 路由地址
+  url: http://127.0.0.1:8000/api/health-plan
+  #指向你 FastAPI 的 chat 路由地址
+  chat-url: http://127.0.0.1:8000/api/chat
+
+# 🚀 RocketMQ 消息中间件配置（异步解耦与削峰）
+rocketmq:
+  # NameServer 地址（对接 Docker 容器中的 rmqnamesrv）
+  name-server: 127.0.0.1:9876
+  producer:
+    # 生产者组名
+    group: health-plan-producer-group
+    # 消息发送超时 (ms)
+    send-message-timeout: 5000
+  consumer:
+    # 消费者组名 - 健康计划请求处理
+    request-group: health-plan-request-consumer-group
+    # 消费者组名 - 回复处理
+    reply-group: health-plan-reply-consumer-group
+    # 消费者组名 - 聊天请求处理（与健康计划分离，避免订阅冲突）
+    chat-request-group: chat-request-consumer-group
+    # 消费者组名 - 聊天回复处理
+    chat-reply-group: chat-reply-consumer-group
+
+# 🚀 自定义 MQ Topic 配置
+mq:
+  topics:
+    # 健康计划请求 Topic
+    health-plan-request: health-plan-request-topic
+    # 健康计划回复 Topic
+    health-plan-reply: health-plan-reply-topic
+    # 聊天请求 Topic
+    chat-request: chat-request-topic
+    # 聊天回复 Topic
+    chat-reply: chat-reply-topic
+  # MQ 请求超时 (ms) — 给 AI 充足的思考时间
+  request-timeout-ms: 120000

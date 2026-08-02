@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitAI - 智能运动健康助手</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <header class="header">
+        <div class="header-inner">
+            <div class="logo">
+                <div class="logo-icon-wrap">
+                    <i class="fa-solid fa-dumbbell logo-icon"></i>
+                </div>
+                <div class="logo-text-group">
+                    <span class="logo-text">FitAI</span>
+                    <span class="logo-subtitle">智能运动健康助手</span>
+                </div>
+            </div>
+
+            <nav class="header-nav">
+                <button class="nav-btn active" data-view="chat">
+                    <i class="fa-solid fa-comments"></i>
+                    <span>AI 对话</span>
+                </button>
+                <button class="nav-btn" data-view="form">
+                    <i class="fa-solid fa-clipboard-list"></i>
+                    <span>快速评估</span>
+                </button>
+                <button class="nav-btn" data-view="about">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>关于</span>
+                </button>
+            </nav>
+
+            <div class="header-status">
+                <span class="status-dot" id="statusDot"></span>
+                <span id="statusText">连接中...</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="main-container">
+        <!-- ==================== 视图1: AI 对话模式 ==================== -->
+        <section class="view active" id="view-chat">
+            <div class="chat-layout">
+                <!-- 左侧：用户健康档案 -->
+                <aside class="chat-sidebar" id="chatSidebar">
+                    <div class="sidebar-header">
+                        <div class="sidebar-avatar">
+                            <i class="fa-solid fa-user-astronaut"></i>
+                        </div>
+                        <h3>健康档案</h3>
+                        <button class="sidebar-toggle" id="sidebarToggle" title="收起面板">
+                            <i class="fa-solid fa-angles-left"></i>
+                        </button>
+                    </div>
+
+                    <div class="sidebar-body">
+                        <div class="info-card">
+                            <div class="info-label"><i class="fa-solid fa-ruler"></i> 身高</div>
+                            <div class="info-value" id="infoHeight">未填写</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label"><i class="fa-solid fa-weight-scale"></i> 体重</div>
+                            <div class="info-value" id="infoWeight">未填写</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label"><i class="fa-solid fa-calendar-days"></i> 年龄</div>
+                            <div class="info-value" id="infoAge">未填写</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label"><i class="fa-solid fa-bullseye"></i> 核心目标</div>
+                            <div class="info-value" id="infoGoal">未填写</div>
+                        </div>
+                        <div class="info-card bmi-card" id="bmiCard" style="display:none;">
+                            <div class="info-label"><i class="fa-solid fa-calculator"></i> BMI 指数</div>
+                            <div class="info-value bmi-value highlight" id="infoBMI">--</div>
+                            <div class="bmi-bar-wrap">
+                                <div class="bmi-bar" id="bmiBar"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-footer">
+                        <button class="btn btn-outline btn-sm" id="resetChatBtn">
+                            <i class="fa-solid fa-rotate-left"></i> 重新开始
+                        </button>
+                    </div>
+                </aside>
+
+                <!-- 右侧：聊天区域 -->
+                <div class="chat-main">
+                    <div class="chat-messages" id="chatMessages">
+                        <!-- 欢迎消息 -->
+                        <div class="message bot">
+                            <div class="message-avatar">
+                                <i class="fa-solid fa-robot"></i>
+                            </div>
+                            <div class="message-bubble">
+                                <div class="message-text">
+                                    <div class="welcome-card">
+                                        <div class="welcome-glow"></div>
+                                        <span class="welcome-emoji">💪</span>
+                                        <h3>欢迎使用 FitAI</h3>
+                                        <p>我是你的专属<strong>智能运动健康助手</strong>，基于 LangGraph 多智能体协作架构，为你提供科学、安全的运动健康指导。</p>
+                                        <div class="welcome-features">
+                                            <div class="feature-chip">🏋️ 专属训练计划</div>
+                                            <div class="feature-chip">🥗 科学饮食建议</div>
+                                            <div class="feature-chip">📊 体能状态评估</div>
+                                            <div class="feature-chip">💬 健身问题解答</div>
+                                        </div>
+                                        <p class="welcome-hint">让我们先认识一下你吧！请告诉我你的<strong>身高、体重、年龄</strong>和<strong>健身目标</strong>～</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 聊天输入区 -->
+                    <div class="chat-input-area">
+                        <div class="quick-actions" id="quickActions">
+                            <button class="quick-btn" data-msg="我想减脂增肌，帮我制定个计划">🎯 减脂增肌</button>
+                            <button class="quick-btn" data-msg="我经常跑步，想知道如何科学训练">🏃 跑步训练</button>
+                            <button class="quick-btn" data-msg="我是健身新手，不知道从哪里开始">🌱 新手入门</button>
+                            <button class="quick-btn" data-msg="帮我分析一下我的运动风险">📊 体能评估</button>
+                        </div>
+                        <div class="input-row">
+                            <div class="input-wrapper">
+                                <textarea
+                                    id="chatInput"
+                                    class="chat-input"
+                                    placeholder="输入你的问题或身体数据..."
+                                    rows="1"
+                                    maxlength="2000"
+                                ></textarea>
+                                <button class="send-btn" id="sendBtn" title="发送消息">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="input-hint">
+                            <span><kbd>Enter</kbd> 发送 · <kbd>Shift + Enter</kbd> 换行</span>
+                            <span class="char-count" id="charCount">0/2000</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 视图2: 快速评估表单 ==================== -->
+        <section class="view" id="view-form">
+            <div class="form-container">
+                <div class="form-header">
+                    <div class="form-icon-wrap">
+                        <i class="fa-solid fa-clipboard-check form-icon"></i>
+                    </div>
+                    <h2>快速健康评估</h2>
+                    <p>填写身体数据，AI 将为你生成专属运动健康计划</p>
+                </div>
+
+                <form id="healthForm" class="health-form">
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="fa-solid fa-user"></i> 基础信息
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="formHeight"><i class="fa-solid fa-ruler"></i> 身高 (cm)</label>
+                                <div class="input-icon-wrap">
+                                    <input type="number" id="formHeight" placeholder="例如：175" min="50" max="300" step="0.1" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="formWeight"><i class="fa-solid fa-weight-scale"></i> 体重 (kg)</label>
+                                <div class="input-icon-wrap">
+                                    <input type="number" id="formWeight" placeholder="例如：70" min="20" max="500" step="0.1" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="formAge"><i class="fa-solid fa-calendar-days"></i> 年龄</label>
+                                <div class="input-icon-wrap">
+                                    <input type="number" id="formAge" placeholder="例如：25" min="10" max="120" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="fa-solid fa-dumbbell"></i> 力量数据
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="formMovement"><i class="fa-solid fa-list-check"></i> 力量动作类型</label>
+                                <select id="formMovement">
+                                    <option value="深蹲">🏋️ 深蹲</option>
+                                    <option value="卧推">🏋️ 卧推</option>
+                                    <option value="硬拉">🏋️ 硬拉</option>
+                                    <option value="无经验">🌱 无经验</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="form1RM"><i class="fa-solid fa-gauge-high"></i> 极限重量 1RM (kg)</label>
+                                <input type="number" id="form1RM" placeholder="无经验填0" min="0" max="2000" step="0.5" value="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="fa-solid fa-pen-to-square"></i> 目标与限制
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="formGoal"><i class="fa-solid fa-bullseye"></i> 核心目标</label>
+                            <textarea id="formGoal" placeholder="例如：我想在3个月内减脂10kg，同时增强核心力量，提升整体运动表现..." maxlength="500" required></textarea>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="formLimits"><i class="fa-solid fa-triangle-exclamation"></i> 客观限制（选填）</label>
+                            <textarea id="formLimits" placeholder="例如：每周只能训练3天、膝盖有旧伤、宿舍晚上11点断电..." maxlength="500"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-lg glow-btn" id="formSubmitBtn">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> 生成我的专属计划
+                        </button>
+                        <button type="reset" class="btn btn-outline btn-lg">
+                            <i class="fa-solid fa-rotate-left"></i> 重置
+                        </button>
+                    </div>
+                </form>
+
+                <!-- 结果展示区 -->
+                <div class="form-result" id="formResult" style="display:none;">
+                    <div class="result-header">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <h3>AI 分析结果</h3>
+                    </div>
+                    <div class="result-body" id="formResultBody"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 视图3: 关于页面 ==================== -->
+        <section class="view" id="view-about">
+            <div class="about-container">
+                <div class="about-hero">
+                    <div class="about-logo">
+                        <i class="fa-solid fa-heart-pulse"></i>
+                    </div>
+                    <h1>分布式智能运动健康管理系统</h1>
+                    <p class="about-subtitle">基于 LangGraph + RocketMQ + 大语言模型的新一代 AI 健康助手</p>
+                </div>
+
+                <div class="about-grid">
+                    <div class="about-card">
+                        <div class="about-card-icon brain">
+                            <i class="fa-solid fa-brain"></i>
+                        </div>
+                        <h3>AI 智能体</h3>
+                        <p>基于 LangGraph 状态机架构，多节点协作（客服→分析→生成→审查→输出），确保方案专业、安全、个性化。</p>
+                    </div>
+                    <div class="about-card">
+                        <div class="about-card-icon chip">
+                            <i class="fa-solid fa-microchip"></i>
+                        </div>
+                        <h3>大模型驱动</h3>
+                        <p>接入通义千问 / DeepSeek 等国产大模型，通过精心设计的专家提示词，提供运动科学级别的分析能力。</p>
+                    </div>
+                    <div class="about-card">
+                        <div class="about-card-icon network">
+                            <i class="fa-solid fa-network-wired"></i>
+                        </div>
+                        <h3>分布式架构</h3>
+                        <p>前端 → Java Spring Boot → RocketMQ → Python FastAPI，微服务 + 消息队列，异步解耦，独立扩展。</p>
+                    </div>
+                    <div class="about-card">
+                        <div class="about-card-icon shield">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <h3>安全可靠</h3>
+                        <p>内置熔断机制（最多 3 次迭代）、审查节点、领域边界防护，确保输出内容专业、安全、不越界。</p>
+                    </div>
+                    <div class="about-card">
+                        <div class="about-card-icon bolt">
+                            <i class="fa-solid fa-bolt"></i>
+                        </div>
+                        <h3>高效迭代</h3>
+                        <p>评估-生成-审查闭环，不合格方案自动重写，最多 3 轮优化，保证生成质量。</p>
+                    </div>
+                    <div class="about-card">
+                        <div class="about-card-icon rocket">
+                            <i class="fa-solid fa-rocket"></i>
+                        </div>
+                        <h3>异步削峰</h3>
+                        <p>RocketMQ 承担消息缓冲，高并发下平稳排队消费，Dashboard 可视化监控每条消息的流动状态。</p>
+                    </div>
+                </div>
+
+                <div class="about-tech">
+                    <h2>技术栈</h2>
+                    <div class="tech-tags">
+                        <span class="tech-tag">Spring Boot 3.3</span>
+                        <span class="tech-tag">RocketMQ 4.9</span>
+                        <span class="tech-tag">FastAPI</span>
+                        <span class="tech-tag">LangGraph</span>
+                        <span class="tech-tag">LangChain</span>
+                        <span class="tech-tag">通义千问</span>
+                        <span class="tech-tag">DeepSeek</span>
+                        <span class="tech-tag">MyBatis-Plus</span>
+                        <span class="tech-tag">MySQL</span>
+                        <span class="tech-tag">Docker</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Toast 通知 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="js/api.js"></script>
+    <script src="js/chat.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
