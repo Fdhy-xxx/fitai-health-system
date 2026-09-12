@@ -13,6 +13,18 @@ spring:
     password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  # 🔒 Redis 配置：消费端幂等去重使用
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    # 使用 lettuce 连接池（Spring Boot 默认客户端）
+    lettuce:
+      pool:
+        max-active: 16
+        max-idle: 8
+        min-idle: 2
+    timeout: 3000ms
+
 # 💾 MyBatis-Plus 框架配置
 mybatis-plus:
   configuration:

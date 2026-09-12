@@ -14,8 +14,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * 请求消费者
@@ -43,6 +46,29 @@ public class HealthPlanRequestConsumer {
     private final PythonAiClient pythonAiClient;
     private final RocketMQTemplate rocketMQTemplate;
     private final RocketMQConfig rocketMQConfig;
+    private final StringRedisTemplate stringRedisTemplate;
+
+    /** 幂等 key 前缀：健康计划 */
+    private static final String IDEMPOTENT_KEY_HEALTH_PLAN = "mq:idem:health-plan:";
+    /** 幂等 key 前缀：对话 */
+    private static final String IDEMPOTENT_KEY_CHAT = "mq:idem:chat:";
+    /** 幂等窗口（小时）：需覆盖消息的最长重试周期 */
+    private static final long IDEMPOTENT_TTL_HOURS = 24L;
+
+    /**
+     * 消费端幂等判断
+     * <p>MQ 只保证"至少一次"投递：重试、重投、消费者重启都可能造成同一条消息被处理多次。
+     * 重复调用大模型的代价很高（耗时 + 费用），所以在进入业务逻辑前先做去重。</p>
+     * <p>注意：Redis 只是第一道防线（快速失败），最终一致性仍需依赖数据库层面的
+     * 唯一约束/状态条件更新兜底 —— Redis 可能被清空、key 可能过期、服务可能不可用。</p>
+     *
+     * @return true 表示首次消费，可以继续处理；false 表示已处理过，应直接 ACK
+     */
+    private boolean isFirstConsume(String keyPrefix, String requestId) {
+        Boolean first = stringRedisTemplate.opsForValue()
+                .setIfAbsent(keyPrefix + requestId, "1", IDEMPOTENT_TTL_HOURS, TimeUnit.HOURS);
+        return Boolean.TRUE.equals(first);
+    }
 
     /**
      * 发送回复消息（健康计划与聊天共用）
@@ -67,6 +93,12 @@ public class HealthPlanRequestConsumer {
         @Override
         public void onMessage(MqHealthPlanRequest request) {
             log.info("📥 收到健康计划请求消息 [requestId={}]", request.getRequestId());
+
+            // 幂等去重：同一条 requestId 只处理一次，直接返回等价于 ACK
+            if (!isFirstConsume(IDEMPOTENT_KEY_HEALTH_PLAN, request.getRequestId())) {
+                log.info("♻️ 消息已处理过，跳过本次消费 [requestId={}]", request.getRequestId());
+                return;
+            }
 
             MqHealthPlanReply reply = MqHealthPlanReply.builder()
                     .requestId(request.getRequestId())
@@ -135,6 +167,12 @@ public class HealthPlanRequestConsumer {
         @Override
         public void onMessage(MqHealthPlanRequest request) {
             log.info("📥 收到聊天请求消息 [requestId={}]", request.getRequestId());
+
+            // 幂等去重：同一条 requestId 只处理一次，直接返回等价于 ACK
+            if (!isFirstConsume(IDEMPOTENT_KEY_CHAT, request.getRequestId())) {
+                log.info("♻️ 聊天消息已处理过，跳过本次消费 [requestId={}]", request.getRequestId());
+                return;
+            }
 
             MqHealthPlanReply reply = MqHealthPlanReply.builder()
                     .requestId(request.getRequestId())
