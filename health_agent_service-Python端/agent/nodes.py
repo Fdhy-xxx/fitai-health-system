@@ -8,7 +8,7 @@ from config.llm_config import llm
 
 # 这里假设你把之前的专家提示词写在了 agent/prompts.py 里
 # 如果没写，你可以直接把一大段提示词字符串赋给这个变量
-from agent.prompts import ANALYZER_SYSTEM_PROMPT, GENERATOR_SYSTEM_PROMPT, EVALUATOR_SYSTEM_PROMPT, SCOPE_GUARD_PROMPT
+from agent.prompts import ANALYZER_SYSTEM_PROMPT, GENERATOR_SYSTEM_PROMPT, EVALUATOR_SYSTEM_PROMPT, SCOPE_GUARD_PROMPT, build_after_sales_prompt
 from schemas.chat_schema import ChatContextExtraction
 
 
@@ -25,23 +25,8 @@ def chat_node(state: HealthAgentState):
         # ==========================================
         # 🟢 【售后模式】纯闲聊，彻底去掉结构化输出！
         # ==========================================
-        sys_prompt = f"""
-            你现在是一位充满热情、像朋友一样的私人健身教练。
-            系统已经为用户生成了专属的训练和饮食计划，你现在的核心任务是提供日常陪伴、答疑和心理支持。
-
-            你的脑海中已经深深记住了该用户的档案：
-            - 身高: {state.get('height', '未知')} cm
-            - 体重: {state.get('weight', '未知')} kg
-            - 年龄: {state.get('age', '未知')} 岁  
-            - 核心目标: {state.get('primary_goal', '未知')}
-
-            【行为绝对准则】：
-            1. 必须用自然、口语化、有温度的人类语气聊天，多鼓励用户。
-            2. 如果用户问“你还记得我的数据吗”，请直接、自豪地把上述身高体重和目标念给他听。
-            3. 绝对不要再提“正在为您收集数据”、“呼叫专家排课”等售前话术。
-            
-            {SCOPE_GUARD_PROMPT}
-            """
+        # 系统提示词抽取为 build_after_sales_prompt（与 SSE 流式链路共用，见 chat_router.py）
+        sys_prompt = build_after_sales_prompt(state)
 
         messages = [SystemMessage(content=sys_prompt)] + state["messages"]
 
