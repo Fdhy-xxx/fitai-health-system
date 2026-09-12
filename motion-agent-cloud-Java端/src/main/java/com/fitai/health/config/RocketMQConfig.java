@@ -21,6 +21,9 @@ public class RocketMQConfig {
     /** MQ 请求超时 (ms) */
     private long requestTimeoutMs = 120000;
 
+    /** 对话模式等待应答超时 (ms)：对话场景用户期望即时回复，超时不宜过长 */
+    private long chatTimeoutMs = 60000;
+
     @Getter
     @Setter
     public static class TopicNames {
