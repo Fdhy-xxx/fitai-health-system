@@ -206,24 +206,38 @@ def generator_node(state: HealthAgentState):
 
 
 def evaluator_node(state: HealthAgentState):
-    # 1. 绑定结构化输出（魔法就在这一行）
+    # 1. 绑定结构化输出：输出包含 checked_constraints / violations，
+    #    强制模型先列约束清单、再逐条举证，而不是给一个笼统的观感判定
     evaluator_llm = llm.with_structured_output(EvaluationResult)
-    # ... 组装上下文 messages 的代码 ...
 
     # 防御性编程：拿到上游结果，如果没有直接报错拦截
     upstream_training_plan = state.get("training_plan")
     if not upstream_training_plan:
         raise ValueError("Node 3 致命错误：未能获取上游训练与饮食方案！")
 
-    # 组装上下文：评估报告 + 核心目标 + 外部限制全覆盖！
+    # 组装上下文：待审方案 + 用户核心目标 + 客观限制条件
+    #
+    # ⚠️ 实测结论（2026-10-05 A/B 消融，见 agent_ab_test.py / agent_ab_report.json）：
+    #    曾经尝试把【用户身体数据】和【上游体测评估报告】也一并注入审查上下文，
+    #    理由是"伤病 / 器械红线写在评估报告里"。但在 4 个高冲突场景上的实测结果相反——
+    #      新提示词 + 旧上下文：拦截率 100%（4/4）
+    #      新提示词 + 完整上下文：拦截率  50%（2/4）
+    #    原因是评估报告里含上游（analyzer）自己的结论与建议（例如"五分化不可行，
+    #    应改为全身训练"），审查节点会把上游结论当作权威意见照单全收，从"独立核对
+    #    用户约束"退化为"复核上游的判断"，反而更容易放行。
+    #    → 因此这里只保留用户侧原始信息（目标 / 限制），不上游结论，保持审查独立。
+    #    仅注入身体数据（不含评估结论）的中间方案未做验证，属后续可试方向。
     evaluator_context = f"""
-        请根据以下上游提供的训练与饮食方案，评估方案可行性：
-        【训练与饮食方案】
-        {upstream_training_plan}
+        请对下面的训练与饮食方案做【逐项核查】，先抽取用户硬性约束清单，再逐条对照方案找违背项。
+
         【用户的核心目标】
-        {state['primary_goal']}
+        {state.get('primary_goal', '（未提供）')}
+
         【用户的客观限制条件】
         {state.get('dormitory_rules', '无特殊限制')}
+
+        【待审训练与饮食方案】
+        {upstream_training_plan}
         """
 
     messages = [
@@ -238,6 +252,9 @@ def evaluator_node(state: HealthAgentState):
     # 它是一个完美的 EvaluationResult 类的实例，你可以直接 . 点出属性
     print(f"打分结果: {response.grade}")
     print(f"毒舌反馈: {response.feedback}")
+    print(f"核查约束 {len(response.checked_constraints or [])} 条 / 发现违背 {len(response.violations or [])} 项")
+    for v in (response.violations or [])[:5]:
+        print(f"  ✗ {v}")
 
     # 【新增核心逻辑】：每次审查完，让迭代次数 + 1
     current_iteration = state.get("iteration_count", 0) + 1

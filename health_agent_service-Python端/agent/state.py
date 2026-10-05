@@ -8,11 +8,35 @@ from pydantic import BaseModel, Field
 from langgraph.graph import MessagesState
 
 class EvaluationResult(BaseModel):
+    """审查节点的结构化输出。
+
+    改造要点：把"给一个笼统的判定"变成"先列约束清单、再逐条核查"。
+    - checked_constraints：要求模型先把用户的硬性约束逐条抄出来，形成可追溯的核查项；
+    - violations：要求对每一条约束给出"约束原文 → 计划中违背它的具体安排"，
+      使 fail 判定有据可依，同时可用 len(violations) 量化审查力度。
+
+    字段均为可选/带默认值，新增字段不影响既有路由逻辑（route_after_eval 只读 grade）。
+    """
+
     grade: Literal["pass", "fail"] = Field(
         description="最终打分，必须是 pass 或 fail"
     )
     feedback: str = Field(
         description="找茬反馈意见，如果是 fail，必须给出明确的修改方向"
+    )
+    checked_constraints: List[str] = Field(
+        default_factory=list,
+        description=(
+            "本轮实际核查过的『用户硬性约束』清单，逐条引用约束原文（伤病禁忌、"
+            "作息/时间限制、可用器械、训练频率上限、目标方向）。用户未给出约束时为空数组。"
+        ),
+    )
+    violations: List[str] = Field(
+        default_factory=list,
+        description=(
+            "逐条列出发现的违背项，格式统一为『约束原文 → 计划中违背它的具体安排』。"
+            "没有违背项时为空数组。"
+        ),
     )
 
 
